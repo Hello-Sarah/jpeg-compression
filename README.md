@@ -17,13 +17,14 @@ JPEG静态图像压缩的基本算法分为四个步骤：
 如果图片是彩色的，那么第一步之前需要先做色彩空间变换(RGB->YCrCb)，整个编码算法的流程图如下所示。
 <center>
 #### 3.1 分块及预处理
-首先利用PIL的Image模块将未经压缩的位图读进内存：
+&emsp;&emsp;首先利用PIL的Image模块将未经压缩的位图读进内存：
 ```
     image = Image.open("lena.bmp")
     ycbcr = image.convert('YCbCr')
     npmat = np.array(ycbcr, dtype=np.uint8)
     npmat = npmat -128
 ```
+
 然后进行DCT变换的预处理，因为dct的常用分块是8*8，如果图像宽和高不能被8整除，则进行补零操作。
 ```
    # dct分块：8*8
@@ -39,6 +40,7 @@ JPEG静态图像压缩的基本算法分为四个步骤：
         blocks_count = (dct_rows // 8)*(dct_cols // 8)
         # raise ValueError(("the width and height of the image should both be mutiples of 8"))
 ```
+
 #### 3.2 对每个8*8分块进行DCT变换
 &emsp;&emsp;变换的基本思想是找到一组新的基，让图像在这组基下能量分布更为集中，便于分离能量。适合图像的变换有很多种，比如KL离散变换，傅立叶变换(DFT)，离散余弦变换(DCT)。其中KL变换的基与输入数据相关不固定，反变换时还需要原始数据，这就很尴尬了。而DFT变换的系数会比DCT变换多，且重构误差比DCT高，因此，这里的变换选择DCT离散余弦变换，并且在实际的实验中，证明了离散余弦变换的分块为8×8的时候性能与重构误差达到了一个最好的trade-off。DCT变换过程是可逆的，主要目的是为了找到图像中比较稀疏的高频分量，在下一步的量化过程将其舍弃，达到信息压缩的目的。JPEG采用的是2-D DCT变换作为其核心，该变换的定义是：
 
